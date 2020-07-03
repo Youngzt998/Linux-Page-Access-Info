@@ -50,35 +50,30 @@ pte_t* get_pte_by_vm(unsigned long addr)
     pgd = pgd_offset(current->mm, addr);
     if(pgd_none(*pgd))
     {
-        printk("Wrong pgd\n");
-        return- 1;
+        return -1;
     }
 
     p4d = p4d_offset(pgd, addr);
     if(p4d_none(*p4d))
     {
-        printk("Wrong p4d\n");
         return -1;
     }
 
     pud = pud_offset(p4d, addr);
     if(pud_none(*pud))
     {
-        printk("Wrong pud\n");
-        return-1;
+        return -1;
     }
 
     pmd = pmd_offset(pud, addr);
     if(pmd_none(*pmd))
     {
-        printk("Wrong pmd\n");
         return-1;
     }
 
     pte = pte_offset_kernel(pmd, addr);
     if(pte_none(*pte))
     {
-        printk("Wrong pte\n");
         return-1;
     }
 
@@ -109,9 +104,18 @@ static void list_vma(void)
                 p->vm_end - p->vm_start
             );
             for(i=p->vm_start; i<p->vm_end;i+=page_size){
-                // pte = get_pte_by_vm(i);
-                // phy_addr = pte_val(*pte) & PAGE_MASK;
-                // printk("\tPhysical address: 0x%08lx\n", phy_addr);
+                pte = get_pte_by_vm(i);
+                if(pte == -1)
+                {
+                    // printk("\tWrong address\n");
+                    continue;
+                }
+                phy_addr = pte_val(*pte) & PAGE_MASK;
+                printk("\tPhysical address: 0x%08lx\t%s\n", 
+                    phy_addr, pte_young(*pte)? "young":"");
+                if(pte_young(*pte)){
+
+                }
             }
 
         }
@@ -301,9 +305,10 @@ static ssize_t proc_write(struct file *file, const char __user *buffer,
                             size_t count, loff_t *f_pos) 
 {
     int i, mod = -1;
-    char* found;
+    char* para;
     char* content = kzalloc((count+1), GFP_KERNEL);
     unsigned long addr, val;
+    pid_t pid;
 
     if(!content) return -ENOMEM;
     if(copy_from_user(content, buffer, count)){
@@ -312,19 +317,20 @@ static ssize_t proc_write(struct file *file, const char __user *buffer,
     }
 
     i = 0;
-    while( (found = strsep(&content, " ")) != NULL )
+    while( (para = strsep(&content, " ")) != NULL )
     {
+        if(i>1){
+            printk("Wrong parameter!\n");
+        }
         printk(KERN_INFO"%d: %s\n",i ,found);
 
-        if (kstrtol(found, 16, &addr) != 0)
+        if (kstrtol(found, 10, &pid) != 0)
         {
             printk("Error translating address to int!\n");
         }
 
         i++;
-        if(i>1){
-            printk("Wrong parameter!\n");
-        }
+
     }
     
     list_vma();
