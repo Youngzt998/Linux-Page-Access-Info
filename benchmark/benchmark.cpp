@@ -18,7 +18,7 @@ using namespace std;
 
 #define NX 1024*8
 #define NY 1024*4
-#define NT 100
+#define NT 5
 
 #define f(x,y)     (sin(x)*sin(y))
 #define randa(x,t) (0.0)
@@ -36,6 +36,9 @@ double dtdxsq, dtdysq;
 double t;
 
 int leafmaxcol;
+
+int pid;
+char command[40];
 
 void swap_ranks(double ***from_ranks, double ***to_ranks) {
   double **tmp_ranks = *from_ranks;
@@ -126,6 +129,10 @@ int heat() {
         ((start_1.tv_sec * 1000000.0) + start_1.tv_usec)) / 1.0);
 
         swap_ranks(&after, &before);
+
+		sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+		system(command);
+		// sleep(1);
   	}
 
   	gettimeofday(&finish, NULL); 
@@ -239,6 +246,11 @@ int heat_rand() {
         ((start_1.tv_sec * 1000000.0) + start_1.tv_usec)) / 1.0);
 
         swap_ranks(&after, &before);
+
+		sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+		int tmp = system(command);
+		cout << "finish sytem: "<<tmp<<endl;
+		// sleep(1);
   	}
 
   	gettimeofday(&finish, NULL); 
@@ -248,7 +260,6 @@ int heat_rand() {
 
     return 0;
 }
-
 
 
 int main(int argc, char *argv[]){
@@ -270,12 +281,20 @@ int main(int argc, char *argv[]){
   	dtdxsq = dt / (dx * dx);
   	dtdysq = dt / (dy * dy);
 
-	pid_t pid = getpid();
-	cout << pid << endl;
-	system("echo \"%d\" >> /proc/PageAccessInfo");
-	system("cat /proc/version");
-  	// heat();
-    
+	pid = getpid();
+	
+	system("echo \"0\">>/proc/PageAccessInfo");
+	sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+	system(command);
+	heat();
+	system("cat /proc/PageAccessInfo");
+
+	system("echo \"0\">>/proc/PageAccessInfo");
+	sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+	system(command);
+	heat_rand();
+	system("cat /proc/PageAccessInfo");
+
     return 0;
 }
 
