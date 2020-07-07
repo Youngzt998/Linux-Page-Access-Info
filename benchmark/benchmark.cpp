@@ -283,17 +283,20 @@ int main(int argc, char *argv[]){
 
 	pid = getpid();
 	
-	system("echo \"0\">>/proc/PageAccessInfo");
+	// cout << "before clear" <<endl;
+	// system("echo \"0\">>/proc/PageAccessInfo");
+	// cout << "after clear" <<endl;
 	sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+	cout << "after first collect" << endl;
 	system(command);
-	heat();
-	system("cat /proc/PageAccessInfo");
+	// heat();
+	// system("cat /proc/PageAccessInfo");
 
-	system("echo \"0\">>/proc/PageAccessInfo");
-	sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
-	system(command);
-	heat_rand();
-	system("cat /proc/PageAccessInfo");
+	// system("echo \"0\">>/proc/PageAccessInfo");
+	// sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+	// system(command);
+	// heat_rand();
+	// system("cat /proc/PageAccessInfo");
 
     return 0;
 }

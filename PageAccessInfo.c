@@ -121,11 +121,11 @@ static unsigned long collect_info(struct task_struct* task)
         for(p = task->mm->mmap; p!=NULL; p=p->vm_next)
         {
             mm = p->vm_mm;
-            printk(
-                KERN_INFO"0x%08lx - 0x%08lx\t0x%08lx \n", 
-                p->vm_start, p->vm_end,
-                p->vm_end - p->vm_start
-            );
+            // printk(
+            //     KERN_INFO"0x%08lx - 0x%08lx\t0x%08lx \n", 
+            //     p->vm_start, p->vm_end,
+            //     p->vm_end - p->vm_start
+            // );
 
             // name = arch_vma_name(p);
             name = NULL;
