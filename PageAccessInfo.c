@@ -93,6 +93,8 @@ struct page_info{
 struct page_info* info;
 struct pid* cur_pid; 
 unsigned long count[10];
+static unsigned long start_vaddr;
+static unsigned long end_vaddr;
 
 /* 
     Print all vma of the current process 
@@ -154,6 +156,8 @@ static unsigned long collect_info(struct task_struct* task)
 
             // pte_counter += (p->vm_end - p->vm_start) >> PAGE_SHIFT;
             printk("Start - End: 0x%08lx - 0x%08lx\n", p->vm_start, p->vm_end);
+            start_vaddr = p->vm_start;
+            end_vaddr = p->vm_end;
             for(i=p->vm_start; i<p->vm_end;i+=page_size){
                 src_pte = get_pte_by_vm(task, i);
                 if(src_pte == 1 || src_pte == 2)
@@ -184,7 +188,7 @@ static unsigned long collect_info(struct task_struct* task)
                     }
                     else if(info[pte_counter].phy_addr!=0 && 
                         info[pte_counter].phy_addr != phy_addr){
-                        printk("phy_addr not consistent!\n");
+                        // printk("phy_addr not consistent!\n");
                     }
                     info[pte_counter].access_num += 1;
                     *src_pte = pte_mkold(*src_pte);
@@ -226,19 +230,23 @@ static int proc_show(struct seq_file *m, void *v) {
     unsigned long i;
     unsigned long counter;
     seq_printf(m, "Page info: %s\n", output);
+    seq_printf(m, "Start/End vaddr:0x%08lx - 0x%08lx\n", start_vaddr, end_vaddr);
     if(!info){
         seq_printf(m, "No accessible information\n");
+        return 1;
+    }
+    for (i=1; i<=9; ++i){
+        count[i] = 0;
     }
     for(i = 0; i< MAX_INFO_NUM; ++i){
         // printk("info_num: %d\n", i);
-        if(info[i].access_num >= 0 && info[i].access_num <= 5){
+        // if(info[i].access_num >= 0 && info[i].access_num <= 5){
             count[info[i].access_num] += 1;
-
-        }
+        // }
         // seq_printf(m, "Physical address: 0x%08lx\tAccesed time:%d\n", 
         //     info[i].phy_addr, info[i].access_num);
     }
-    for (i = 0; i<=5; ++i){
+    for (i = 1; i<=9; ++i){
         seq_printf(m, "%d pages was accessed %d times\n", count[i], i);
     }
 
@@ -278,12 +286,24 @@ static ssize_t proc_write(struct file *file, const char __user *buffer,
 
     if(pid == 0){   //clear info
         printk("clear info\n");
+        vfree(info);
+        info = (struct page_info*) vmalloc(MAX_INFO_NUM * sizeof(struct page_info));
+        if(!info){
+            printk("vmalloc error!\n");
+            return 0;
+        }
+        printk("info: 0x%08lx\n", info);
         for(i = 0; i< MAX_INFO_NUM; ++i){
             // printk("info_num: %d\n", i);
             info[i].phy_addr = 0;
             info[i].access_num = 0;
         }
-        return 0;
+        for(i = 0; i< MAX_INFO_NUM; ++i){
+            // printk("info_num: %d\n", i);
+            info[i].phy_addr = 0;
+            info[i].access_num = 0;
+        }
+        return count;
     }
     
     
@@ -296,10 +316,13 @@ static ssize_t proc_write(struct file *file, const char __user *buffer,
     }
     printk(KERN_INFO"pid: %d\tname: %s\n", current_task->pid, current_task->comm);
     
-
+    if(!info){
+        printk("vmalloc to info was null\n");
+        return count;
+    }
     collect_info(current_task);
 
-    return 0;
+    return count;
 }
 
 

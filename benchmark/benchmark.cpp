@@ -140,6 +140,29 @@ int heat() {
 		 (((finish.tv_sec * 1000000.0) + finish.tv_usec) -
 	  	((start.tv_sec * 1000000.0) + start.tv_usec)) / 1.0);
 
+	unsigned long min_addr = UINT64_MAX, max_addr = 0;
+	max_addr = max_addr >= (unsigned long)before? max_addr: (unsigned long)before;
+	min_addr = min_addr <= (unsigned long)before? min_addr: (unsigned long)before;
+	max_addr = max_addr >= (unsigned long)after? max_addr: (unsigned long)after;
+	min_addr = min_addr <= (unsigned long)after? min_addr: (unsigned long)after;
+  	for (int i = 0; i < nx; ++i) 
+  	{
+  		*(before + i) = (double *) malloc(ny * sizeof(double));
+    	*(after + i) = (double *) malloc(ny * sizeof(double));
+		max_addr = max_addr >= (unsigned long)(*(before + i))? max_addr: (unsigned long)(*(before + i));
+		min_addr = min_addr <= (unsigned long)(*(before + i))? min_addr: (unsigned long)(*(before + i));
+		max_addr = max_addr >= (unsigned long)(*(after + i))? max_addr: (unsigned long)((*(after + i)));
+		min_addr = min_addr <= (unsigned long)((*(after + i)))? min_addr: (unsigned long)((*(after + i)));
+  	}	
+	printf("min_addr: 0x%08lx\tmax_addr: 0x%08lx\n\n", min_addr, max_addr);
+
+	for (int i = 0; i < nx; ++i) 
+  	{
+  		free(*(before + i));
+    	free(*(after + i));
+  	}
+	free(before);
+	free(after);
     return 0;
 }
 
@@ -148,10 +171,10 @@ int heat_rand() {
 	struct timeval start_1, finish_1;
 	double **before, **after;
 	int  c, l;
-
 	
 	before = (double **) malloc(nx * sizeof(double *));
   	after = (double **) malloc(nx * sizeof(double *));
+	
 
   	#pragma omp parallel for schedule(static, 64) 
   	for (int i = 0; i < nx; ++i) 
@@ -219,7 +242,7 @@ int heat_rand() {
 			} else {
 				i = t % 64 + 64 * 7;
 			}
-	    
+	    	
 		    if (i == 0) {
 		    	for (a=0, b=0; b < ny; b++){
       				before[a][b] = randc(yu + b * dy, t);
@@ -258,6 +281,30 @@ int heat_rand() {
 		 (((finish.tv_sec * 1000000.0) + finish.tv_usec) -
 	  	((start.tv_sec * 1000000.0) + start.tv_usec)) / 1.0);
 
+	unsigned long min_addr = UINT64_MAX, max_addr = 0;
+	max_addr = max_addr >= (unsigned long)before? max_addr: (unsigned long)before;
+	min_addr = min_addr <= (unsigned long)before? min_addr: (unsigned long)before;
+	max_addr = max_addr >= (unsigned long)after? max_addr: (unsigned long)after;
+	min_addr = min_addr <= (unsigned long)after? min_addr: (unsigned long)after;
+  	for (int i = 0; i < nx; ++i) 
+  	{
+  		*(before + i) = (double *) malloc(ny * sizeof(double));
+    	*(after + i) = (double *) malloc(ny * sizeof(double));
+		max_addr = max_addr >= (unsigned long)(*(before + i))? max_addr: (unsigned long)(*(before + i));
+		min_addr = min_addr <= (unsigned long)(*(before + i))? min_addr: (unsigned long)(*(before + i));
+		max_addr = max_addr >= (unsigned long)(*(after + i))? max_addr: (unsigned long)((*(after + i)));
+		min_addr = min_addr <= (unsigned long)((*(after + i)))? min_addr: (unsigned long)((*(after + i)));
+  	}	
+
+	for (int i = 0; i < nx; ++i) 
+  	{
+  		free(*(before + i));
+    	free(*(after + i));
+  	}
+	free(before);
+	free(after);
+	// printf("before: 0x%08lx\tafter: 0x%08lx\n", before, after);
+	printf("min_addr: 0x%08lx\tmax_addr: 0x%08lx\n\n", min_addr, max_addr);
     return 0;
 }
 
@@ -281,22 +328,24 @@ int main(int argc, char *argv[]){
   	dtdxsq = dt / (dx * dx);
   	dtdysq = dt / (dy * dy);
 
-	pid = getpid();
-	
-	// cout << "before clear" <<endl;
-	// system("echo \"0\">>/proc/PageAccessInfo");
-	// cout << "after clear" <<endl;
-	sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
-	cout << "after first collect" << endl;
-	system(command);
-	// heat();
-	// system("cat /proc/PageAccessInfo");
+	srand(time(NULL));
 
-	// system("echo \"0\">>/proc/PageAccessInfo");
-	// sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
-	// system(command);
-	// heat_rand();
-	// system("cat /proc/PageAccessInfo");
+	pid = getpid();
+	cout << "pid: " << pid << endl;
+	if(argc>=2 && argv[2][0] == 'r'){
+		system("echo \"0\">>/proc/PageAccessInfo");
+		sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+		system(command);
+		heat_rand();
+		system("cat /proc/PageAccessInfo");
+		return 0;
+	}
+
+	system("echo \"0\">>/proc/PageAccessInfo");
+	sprintf(command, "echo \"%d\">>/proc/PageAccessInfo", pid);
+	system(command);
+	heat();
+	system("cat /proc/PageAccessInfo");
 
     return 0;
 }
